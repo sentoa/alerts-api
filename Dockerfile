@@ -1,20 +1,23 @@
 # Use an official Python runtime as the base image
 FROM python:3.9-slim
 
-RUN adduser -D worker
-USER worker
-WORKDIR /home/worker
+# Create a non-root user
+RUN adduser --disabled-password --gecos '' myuser
 
-RUN pip install --user pipenv
-RUN pip install prometheus_client requests Flask --user pipenv
+# Set the working directory to /app
+WORKDIR /app
 
+# Change the ownership of the working directory to the new user
+RUN chown -R myuser:myuser /app
 
-ENV PATH="/home/worker/.local/bin:${PATH}"
+# Switch to the new user
+USER myuser
 
-COPY --chown=worker:worker Pipfile Pipfile
-RUN pipenv lock -r > requirements.txt
-RUN pip install --user -r requirements.txt
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-COPY --chown=worker:worker . .
+# Install the required packages
+RUN pip install prometheus_client requests Flask
 
+# Set the default command for the container
 CMD ["python", "app.py"]
