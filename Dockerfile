@@ -1,14 +1,20 @@
 # Use an official Python runtime as the base image
 FROM python:3.9-slim
 
-# Set the working directory to /app
-WORKDIR /app
+RUN adduser -D worker
+USER worker
+WORKDIR /home/worker
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+RUN pip install --user pipenv
+RUN pip install prometheus_client requests Flask --user pipenv
 
-# Install the required packages
-RUN pip install prometheus_client requests Flask
 
-# Run the command to start the app
+ENV PATH="/home/worker/.local/bin:${PATH}"
+
+COPY --chown=worker:worker Pipfile Pipfile
+RUN pipenv lock -r > requirements.txt
+RUN pip install --user -r requirements.txt
+
+COPY --chown=worker:worker . .
+
 CMD ["python", "app.py"]
